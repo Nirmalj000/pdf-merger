@@ -10,7 +10,7 @@ PDF Merger is a simple web application that allows users to upload multiple PDF 
 - **Upload multiple PDF files**: Users can select multiple PDF files from their device.
 - **Rearrange files**: Drag-and-drop functionality allows users to reorder the files before merging.
 - **Merge PDFs**: The selected PDFs can be merged into one document with a single click.
-- **Automatic download**: The merged PDF is automatically downloaded once the merge is complete.
+- **download**: The merged PDF can be downloaded once the merge is complete.
 
 ## Technologies Used
 
@@ -25,5 +25,5 @@ To run the PDF Merger application locally, follow these steps:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/pdf-merger.git
+   git clone https://github.com/nirmalj000/pdf-merger.git
    cd pdf-merger
