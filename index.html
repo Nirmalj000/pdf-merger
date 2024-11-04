@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 40px;
+        }
+        h1 {
+            color: #343a40;
+            margin-bottom: 30px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        input[type="file"]:hover {
+            border-color: #0056b3;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .file-list-item {
+            padding: 15px;
+            background: #f1f1f1;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+            color: #343a40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: grab;
+            transition: background 0.2s ease;
+        }
+        .file-list-item:last-child {
+            border-bottom: none;
+        }
+        .file-list-item:hover {
+            background-color: #e2e6ea;
+        }
+        .delete-button {
+            color: #d9534f;
+            font-weight: bold;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Merge PDF Files</h1>
+    <input type="file" id="pdfs" accept="application/pdf" multiple required onchange="handleFileSelect(event)">
+    <ul id="file-list" class="file-list"></ul>
+    <button id="merge-button">Merge PDFs</button>
+
+    <script>
+        let selectedFiles = [];
+
+        function handleFileSelect(event) {
+            selectedFiles = Array.from(event.target.files);
+            renderFileList();
+        }
+
+        function renderFileList() {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'file-list-item';
+                listItem.textContent = file.name;
+
+                const deleteButton = document.createElement('span');
+                deleteButton.className = 'delete-button';
+                deleteButton.textContent = '(x)';
+                deleteButton.onclick = () => {
+                    selectedFiles.splice(index, 1);
+                    renderFileList();
+                };
+                listItem.appendChild(deleteButton);
+
+                // Enable drag-and-drop for reordering
+                listItem.draggable = true;
+                listItem.ondragstart = (e) => { e.dataTransfer.setData('text/plain', index); };
+                listItem.ondragover = (e) => { e.preventDefault(); };
+                listItem.ondrop = (e) => {
+                    e.preventDefault();
+                    const draggedIndex = e.dataTransfer.getData('text/plain');
+                    [selectedFiles[draggedIndex], selectedFiles[index]] = [selectedFiles[index], selectedFiles[draggedIndex]];
+                    renderFileList();
+                };
+
+                fileList.appendChild(listItem);
+            });
+        }
+
+        document.getElementById('merge-button').onclick = async () => {
+            if (selectedFiles.length === 0) return; // Check if files are selected
+
+            const mergedPdf = await PDFLib.PDFDocument.create();
+            
+            for (const file of selectedFiles) {
+                const pdfBytes = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                pages.forEach(page => mergedPdf.addPage(page));
+            }
+
+            const mergedPdfBlob = await mergedPdf.save(); // Save the merged PDF blob
+            const blob = new Blob([mergedPdfBlob], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+
+            // Automatically download the merged PDF
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'merged_output.pdf'; // Specify the file name
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // Clean up the URL object
+        };
+    </script>
+</body>
+</html>
